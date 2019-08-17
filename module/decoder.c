@@ -46,7 +46,7 @@ static struct task_struct *ts = NULL;
 static wait_queue_head_t _queue;
 static ktime_t _old;
 static volatile int _ulen;
-static unsigned char _data[5];
+static unsigned char ___data[5];
 
 static int proc_fs_show(struct seq_file *m, void *v)
 {
@@ -141,7 +141,7 @@ static irqreturn_t read_isr(int irq, void *data)
 			_read_req = READ_BIT_HIGH;
 			bit_count = 7;
 			char_count = 0;
-			memset(_data, 0, sizeof(_data));
+			memset(___data, 0, sizeof(___data));
 		}
 		break;
 	case READ_BIT_HIGH:
@@ -153,7 +153,7 @@ static irqreturn_t read_isr(int irq, void *data)
 		if (gpio_get_value(_pin) == 0) {
 			_ulen = ktime_us_delta(now, _old);
 			if (_ulen > 40) {
-				_data[char_count] |= (1 << bit_count);
+				___data[char_count] |= (1 << bit_count);
 			}
 			if (--bit_count < 0) {
 				char_count++;
@@ -219,21 +219,21 @@ static int do_read_data(struct st_inf *s)
 	 * Assuming that sometimes one bit is lost and, if the values are low enough,
 	 * the checksum is identical.
 	 */
-	cks = _data[0] + _data[1] + _data[2] + _data[3];
-	if (cks != _data[4]) {
+	cks = ___data[0] + ___data[1] + ___data[2] + ___data[3];
+	if (cks != ___data[4]) {
 		return -1;
 	}
 
 	s->rh =
-	    (int)(int16_t) (((uint16_t) _data[0] << 8) | (uint16_t) _data[1]);
+	    (int)(int16_t) (((uint16_t) ___data[0] << 8) | (uint16_t) ___data[1]);
 
-	if (_data[2] & 0x80) {
-		_data[2] = _data[2] & 0x7f;
+	if (___data[2] & 0x80) {
+		___data[2] = ___data[2] & 0x7f;
 		s->t =
 		    -1 *
-		    ((int)(((uint16_t) _data[2] << 8) | (uint16_t) _data[3]));
+		    ((int)(((uint16_t) ___data[2] << 8) | (uint16_t) ___data[3]));
 	} else {
-		s->t = (int)(((uint16_t) _data[2] << 8) | (uint16_t) _data[3]);
+		s->t = (int)(((uint16_t) ___data[2] << 8) | (uint16_t) ___data[3]);
 	}
 
 	if (s->rh > 1000 || s->rh < 0 || s->t > 800 || s->t < -400) {
